@@ -1,6 +1,0 @@
-# Storage
-
-bucket = "unique-s3-bucket-name"
-key    = "terraform.tfstate"
-region = "us-east-1"
-

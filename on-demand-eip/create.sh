@@ -25,12 +25,10 @@ while getopts "c:ilv:" opt; do
   esac
 done
 
-set -x
-
 if [[ "$LOCAL_STORAGE" -ne 0 ]]; then
 	terraform init
 else
-	terraform init -backend-config=./backend.tfvars
+	terraform init -backend-config=../s3-backend/backend.tfvars
 fi
 
 terraform plan -out=plan.tfout -detailed-exitcode

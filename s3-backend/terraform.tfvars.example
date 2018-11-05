@@ -1,0 +1,17 @@
+# The AWS Access Key
+aws_access_key = "<REDACTED>"
+
+# The AWS Secret Key
+aws_secret_key = "<REDACTED>"
+
+# This is the AWS Region you are deploying in.
+region = "us-west-2"
+
+# This is the s3 bucket to create
+bucket = "bucket_name"
+
+# This is the key in s3 for the backend content
+key = "terraform.tfstate"
+
+# Put your name here so we know who to talk to if we want to modify this bucket
+originator = "unspecified"
