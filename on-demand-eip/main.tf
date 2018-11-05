@@ -242,6 +242,28 @@ resource "aws_eip" "rancherha-eip" {
   }
 }
 
+# terraform state file setup
+# create an S3 bucket to store the state file in
+resource "aws_s3_bucket" "terraform-state-storage-s3" {
+    bucket = "mak3r-trfm-sample-rnchr-fe.rancher.space"
+ 
+    versioning {
+      enabled = true
+    }
+ 
+    lifecycle {
+      prevent_destroy = true
+    }
+ 
+    tags {
+      Name = "S3 Remote Terraform State Store"
+    }      
+}
+terraform {
+  backend "s3" {
+  }
+}
+
 data "aws_route53_zone" "r53_zone" {
   name         = "${var.r53_hosted_zone}"
 }

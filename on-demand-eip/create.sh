@@ -2,9 +2,10 @@
 
 LETS_ENCRYPT=""
 HELM_INSTALL=0
+LOCAL_STORAGE=0
 RANCHER_VERSION="2.1.0"
 
-while getopts "c:iv:" opt; do
+while getopts "c:ilv:" opt; do
   case $opt in
     c)
       LETS_ENCRYPT=$OPTARG
@@ -12,6 +13,9 @@ while getopts "c:iv:" opt; do
     i) 
       HELM_INSTALL=1
       ;;
+		l) 
+			LOCAL_STORAGE=1
+			;;
     v)
       RANCHER_VERSION=$OPTARG
       ;;
@@ -21,7 +25,13 @@ while getopts "c:iv:" opt; do
   esac
 done
 
-terraform init
+set -x
+
+if [[ "$LOCAL_STORAGE" -ne 0 ]]; then
+	terraform init
+else
+	terraform init -backend-config=./backend.tfvars
+fi
 
 terraform plan -out=plan.tfout -detailed-exitcode
 TERRA_DIFF=$?
