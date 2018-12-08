@@ -65,6 +65,22 @@ The url for the installation is automatically assembled by parameters specified 
 
 For all other installation configurations. Alternative certs or other specific arguments that you want to use with the `helm install` command, it is best to run the command(s) by hand following the `Installing Rancher` section.
 
+## Using local configuration
+Run the creat.sh script with the -l flag `./create.sh -l`
+
+
+## Using the S3 backend
+Check if the bucket for this project has already been created in S3. 
+### If it has been created 
+Download and copy the backend.tfvars file from S3 bucket into the s3-backend directory
+
+### If it has not been created
+Use the s3-backend terraform to create a new bucket to use.
+After creating the bucket, manually add the backend.tfvars file to the bucket
+
+Run the `./create.sh` script from on-demand-eip without the `-l` flag.
+
+
 ## Cleaning up
 
 Running `./destroy.sh` will terraform destroy your AWS resources and remove all auxiliary files.
