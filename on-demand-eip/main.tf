@@ -214,6 +214,10 @@ data "template_cloudinit_config" "rancherha_cloudinit" {
     content_type = "text/x-shellscript"
     content      = "#!/bin/sh\nusermod -aG docker ubuntu"
   }
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${file("setup_overlay2.sh")}"
+  }
 }
 
 resource "aws_instance" "rancherha" {
