@@ -48,6 +48,39 @@ Make sure you have `rke`, `helm`, and `kubectl` available in your path.
 helm install rancher-stable/rancher --name rancher --namespace cattle-system --set hostname=<route53hostname> --set ingress.tls.source=letsEncrypt --set letsEncrypt.email=<your-email>
 ```
 
+## Automatically installing helm
+
+1. Use the command line switch `-i` with the create.sh script to inform it to execute the helm install. This is required to automatically install via helm and must not be included if you choose to manually install Rancher via helm. ```./create.sh -i```
+
+1. Use the command line switch `-v rancher_version` with the create.sh script to set a specific rancher version. If this is not specified version `v2.1.0` will be used. There is currently no `latest` or `stable` version option for the Rancher helm chart. This only works when the `-i` flag is also used. ```./create.sh -i -v v2.0.8```
+
+1. To also use letsEncrypt certs, use the command line switch -c with an email address parameter. ```./create.sh -i -v v2.0.8 -c your.email@somewhere.net```
+
+Putting it altogether to have an automated helm install with a specific Rancher version and also using letsEncrypt certs looks like this.
+```
+./create.sh -i -c your.email@somewhere.net
+```
+
+The url for the installation is automatically assembled by parameters specified in terraform.tfvars and configured to use route53.
+
+For all other installation configurations. Alternative certs or other specific arguments that you want to use with the `helm install` command, it is best to run the command(s) by hand following the `Installing Rancher` section.
+
+## Using local configuration
+Run the creat.sh script with the -l flag `./create.sh -l`
+
+
+## Using the S3 backend
+Check if the bucket for this project has already been created in S3. 
+### If it has been created 
+Download and copy the backend.tfvars file from S3 bucket into the s3-backend directory
+
+### If it has not been created
+Use the s3-backend terraform to create a new bucket to use.
+After creating the bucket, manually add the backend.tfvars file to the bucket
+
+Run the `./create.sh` script from on-demand-eip without the `-l` flag.
+
+
 ## Cleaning up
 
 Running `./destroy.sh` will terraform destroy your AWS resources and remove all auxiliary files.
