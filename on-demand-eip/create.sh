@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# Email address used with letsencrypt cert - empty means don't use letsencrypt
 LETS_ENCRYPT=""
+# Use helm to install rancher 0=no 1=yes
 HELM_INSTALL=0
+# Use local storage 1=yes 0=no
 LOCAL_STORAGE=0
-RANCHER_VERSION="2.1.0"
+# Install with rancher version
+RANCHER_VERSION="2.2.2"
 
 while getopts "c:ilv:" opt; do
   case $opt in
@@ -15,6 +19,7 @@ while getopts "c:ilv:" opt; do
       ;;
 		l) 
 			LOCAL_STORAGE=1
+			echo "Backend type must be set in configuration file main.tf. Use 'backend \"s3\"{}'"
 			;;
     v)
       RANCHER_VERSION=$OPTARG
@@ -25,9 +30,12 @@ while getopts "c:ilv:" opt; do
   esac
 done
 
-if [[ "$LOCAL_STORAGE" -ne 0 ]]; then
-	terraform init
+# Backend type MUST be set in the config file main.tf
+if [[ "$LOCAL_STORAGE" -eq 0 ]]; then
+	# backend "local" {}
+	terraform init 
 else
+  # backend "s3" {}
 	terraform init -backend-config=../s3-backend/backend.tfvars
 fi
 
@@ -62,11 +70,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 			echo "Take a 30 second break k8s needs a moment to reconcile ..."
 			sleep 30
 
-			helm install stable/cert-manager --name cert-manager --namespace kube-system
+			helm install stable/cert-manager --name cert-manager --namespace kube-system --version v0.5.2
+			helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+			helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+			helm repo update
 			if [[ ! -z "$LETS_ENCRYPT" ]]; then
-				helm install rancher-stable/rancher --name rancher --namespace cattle-system --version "$RANCHER_VERSION" --set hostname="$RANCHER_HOST" --set ingress.tls.source=letsEncrypt --set letsEncrypt.email="$LETS_ENCRYPT"
+				helm install rancher-latest/rancher --name rancher --namespace cattle-system --version "$RANCHER_VERSION" --set addLocal="true" --set hostname="$RANCHER_HOST" --set ingress.tls.source=letsEncrypt --set letsEncrypt.email="$LETS_ENCRYPT"
 			else
-				helm install rancher-stable/rancher --name rancher --namespace cattle-system --version "$RANCHER_VERSION" --set hostname="$RANCHER_HOST"
+				helm install rancher-latest/rancher --name rancher --namespace cattle-system --version "$RANCHER_VERSION" --set addLocal="true" --set hostname="$RANCHER_HOST"
 			fi
 		fi
 	else
