@@ -53,13 +53,18 @@ variable "ssh_key_name" {
   description = "Amazon AWS Key Pair Name"
 }
 
+variable "ssh_key_path" {
+  default     = ""
+  description = "Path to the private key named by ssh_key_name"
+}
+
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
   }
 
   filter {
@@ -70,7 +75,7 @@ data "aws_ami" "ubuntu" {
 
 # Create a new load balancer
 resource "aws_elb" "elb" {
-  name               = "${var.prefix}-rancherha-elb"
+  name               = "${var.prefix}-terra-import-elb"
   availability_zones = "${var.availability_zones}"
 
   listener {
@@ -95,19 +100,19 @@ resource "aws_elb" "elb" {
     interval            = 30
   }
 
-  instances                   = ["${aws_instance.rancherha.*.id}"]
+  instances                   = ["${aws_instance.terra-import.*.id}"]
   cross_zone_load_balancing   = true
   idle_timeout                = 400
   connection_draining         = true
   connection_draining_timeout = 400
   security_groups = ["${aws_security_group.rancher_mgmt_sg.id}"]
   tags {
-    Name = "${var.prefix}-rancherha-elb"
+    Name = "${var.prefix}-terra-import-elb"
   }
 }
 
 resource "aws_security_group" "rancher_mgmt_sg" {
-  name = "${var.prefix}-mgmt-rancherha"
+  name = "${var.prefix}-mgmt-terra-import"
   vpc_id = "${var.vpc_id}"
 
   egress {
@@ -147,7 +152,7 @@ resource "aws_security_group" "rancher_mgmt_sg" {
 }
 
 resource "aws_security_group" "rancher_internal_sg" {
-  name = "${var.prefix}-internal-rancherha"
+  name = "${var.prefix}-internal-terra-import"
   vpc_id = "${var.vpc_id}"
 
   ingress {
@@ -200,18 +205,22 @@ resource "aws_security_group" "rancher_internal_sg" {
   }
 }
 
-data "template_cloudinit_config" "rancherha_cloudinit" {
+data "template_cloudinit_config" "terra-import_cloudinit" {
   part {
     content_type = "text/x-shellscript"
-    content      = "${file("17.03.sh")}"
+    content      = "${file("18.09.sh")}"
   }
   part {
     content_type = "text/x-shellscript"
     content      = "#!/bin/sh\nusermod -aG docker ubuntu"
   }
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${file("setup_overlay2.sh")}"
+  }
 }
 
-resource "aws_instance" "rancherha" {
+resource "aws_instance" "terra-import" {
   count           = "${var.instance_count}"
   availability_zone = "${element(var.availability_zones, count.index)}"
   ami             = "${data.aws_ami.ubuntu.image_id}"
@@ -219,34 +228,18 @@ resource "aws_instance" "rancherha" {
   key_name        = "${var.ssh_key_name}"
   vpc_security_group_ids = ["${aws_security_group.rancher_internal_sg.id}", "${aws_security_group.rancher_mgmt_sg.id}"]
   subnet_id = "${element(var.subnet_ids, count.index)}"
-  user_data = "${data.template_cloudinit_config.rancherha_cloudinit.rendered}"
+  user_data = "${data.template_cloudinit_config.terra-import_cloudinit.rendered}"
   root_block_device {
     volume_size = "${var.instance_disk_size}"
   }
   tags {
-    Name = "${var.prefix}-ondemand-ha-${count.index}"
-  }
-}
-
-data "aws_route53_zone" "r53_zone" {
-  name         = "${var.r53_hosted_zone}"
-}
-
-resource "aws_route53_record" "r53_record" {
-  zone_id = "${data.aws_route53_zone.r53_zone.zone_id}"
-  name    = "${var.prefix}-ha.${data.aws_route53_zone.r53_zone.name}"
-  type    = "A"
-
-  alias {
-    name                   = "${aws_elb.elb.dns_name}"
-    zone_id                = "${aws_elb.elb.zone_id}"
-    evaluate_target_health = false
+    Name = "${var.prefix}-ondemand-${count.index}"
   }
 }
 
 data "template_file" "segment" {
   count = "${var.instance_count}"
-  template = "- address: ${aws_instance.rancherha.*.public_ip[count.index]}\n  internal_address: ${aws_instance.rancherha.*.private_ip[count.index]}\n  user: ubuntu\n  role: [controlplane,etcd,worker]"
+  template = "- address: ${aws_instance.terra-import.*.public_ip[count.index]}\n  internal_address: ${aws_instance.terra-import.*.private_ip[count.index]}\n  user: ubuntu\n  role: [controlplane,etcd,worker]\n  docker_socket: /var/run/docker.sock\n  ssh_key_path: ${var.ssh_key_path}"
 }
 
 output "clusteryml" {
