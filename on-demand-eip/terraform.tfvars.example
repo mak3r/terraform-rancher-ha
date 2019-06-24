@@ -34,4 +34,4 @@ instance_count = "3"
 instance_disk_size = "35"
 
 # This is the type of spot instance to use
-type = "t2.medium"
+type = "t2.large"

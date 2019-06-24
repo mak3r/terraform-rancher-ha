@@ -251,6 +251,11 @@ terraform {
   }
 }
 
+terraform {
+  backend "s3" {
+  }
+}
+
 data "aws_route53_zone" "r53_zone" {
   name         = "${var.r53_hosted_zone}"
 }
