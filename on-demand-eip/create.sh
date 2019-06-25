@@ -1,15 +1,15 @@
 #!/bin/bash
 
+set -x
 
 # Email address used with letsencrypt cert - empty means don't use letsencrypt
-LETS_ENCRYPT=""
+LETS_ENCRYPT="certs@thirstie.com"
 # Use helm to install rancher 0=no 1=yes
-HELM_INSTALL=0
+HELM_INSTALL=1
 # Use local storage 1=yes 0=no
 LOCAL_STORAGE=0
 # Install with rancher version
-
-RANCHER_VERSION="2.2.2"
+RANCHER_VERSION="2.2.4"
 
 while getopts "c:ilv:" opt; do
   case $opt in
@@ -34,7 +34,8 @@ done
 
 # Backend type MUST be set in the config file main.tf
 if [[ "$LOCAL_STORAGE" -ne "0" ]]; then
-	# backend "local" {}
+	terraform init
+else
 	terraform init -backend-config=../s3-backend/backend.tfvars
 fi
 

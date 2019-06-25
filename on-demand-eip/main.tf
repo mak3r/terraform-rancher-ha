@@ -100,13 +100,13 @@ resource "aws_elb" "elb" {
     interval            = 30
   }
 
-  instances                   = ["${aws_instance.terrarancher.*.id}"]
+  instances                   = "${aws_instance.terrarancher.*.id}"
   cross_zone_load_balancing   = true
   idle_timeout                = 400
   connection_draining         = true
   connection_draining_timeout = 400
   security_groups = ["${aws_security_group.rancher_mgmt_sg.id}"]
-  tags {
+  tags = {
     Name = "${var.prefix}-terrarancher-elb"
   }
 }
@@ -232,7 +232,7 @@ resource "aws_instance" "terrarancher" {
   root_block_device {
     volume_size = "${var.instance_disk_size}"
   }
-  tags {
+  tags = {
     Name = "${var.prefix}-ondemand-${count.index}"
   }
 }
@@ -241,15 +241,15 @@ resource "aws_eip" "terrarancher-eip" {
   count = "${var.instance_count}"
   vpc = true
   instance = "${aws_instance.terrarancher.*.id[count.index]}"
-  tags {
+  tags = {
     Name = "${var.prefix}-ondemand-eip-${count.index}"
   }
 }
 
-terraform {
-  backend "local" {
-  }
-}
+# terraform {
+#   backend "local" {
+#   }
+# }
 
 terraform {
   backend "s3" {
